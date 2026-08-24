@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Masterclass · Realidad Aumentada WebAR</title>
+<script src="./qrcode.js"></script>
+<style>
+  :root{
+    --bg:#0A0E13; --panel:#111A22; --panel-2:#16212B; --line:#26333F; --line-soft:#1b2630;
+    --ink:#E9EFF4; --ink-dim:#93A4B3; --ink-faint:#5E7182;
+    --accent:#5B8CFF; --accent-ink:#0A0E13; --signal:#FFB020; --ok:#35D07F;
+    --fw-aframe:#5B8CFF; --fw-studio:#B48CFF; --fw-three:#28D6E6;
+    --mono:ui-monospace,"SFMono-Regular","Cascadia Code","Roboto Mono",Menlo,Consolas,monospace;
+    --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:light){
+    :root{ --bg:#E9EEF3; --panel:#FFFFFF; --panel-2:#F3F7FB; --line:#D2DCE6; --line-soft:#E4EBF1;
+      --ink:#0E1720; --ink-dim:#46586A; --ink-faint:#788999; --accent:#2F63E6; --accent-ink:#FFFFFF;
+      --signal:#B26A00; --ok:#0E844C; --fw-aframe:#2F63E6; --fw-studio:#7A46D6; --fw-three:#0E93A3; }
+  }
+  :root[data-theme="dark"]{ --bg:#0A0E13; --panel:#111A22; --panel-2:#16212B; --line:#26333F; --line-soft:#1b2630;
+    --ink:#E9EFF4; --ink-dim:#93A4B3; --ink-faint:#5E7182; --accent:#5B8CFF; --accent-ink:#0A0E13;
+    --signal:#FFB020; --ok:#35D07F; --fw-aframe:#5B8CFF; --fw-studio:#B48CFF; --fw-three:#28D6E6; }
+  :root[data-theme="light"]{ --bg:#E9EEF3; --panel:#FFFFFF; --panel-2:#F3F7FB; --line:#D2DCE6; --line-soft:#E4EBF1;
+    --ink:#0E1720; --ink-dim:#46586A; --ink-faint:#788999; --accent:#2F63E6; --accent-ink:#FFFFFF;
+    --signal:#B26A00; --ok:#0E844C; --fw-aframe:#2F63E6; --fw-studio:#7A46D6; --fw-three:#0E93A3; }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    background-image:linear-gradient(var(--line-soft) 1px,transparent 1px),linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+    background-size:46px 46px;background-position:-1px -1px}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 20px 64px}
+  a{color:var(--accent);text-decoration:none}
+  code{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-faint)}
+
+  /* header */
+  header{border-bottom:1px solid var(--line);margin-bottom:34px;
+    background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 65%,transparent),transparent)}
+  .head-in{max-width:1200px;margin:0 auto;padding:34px 20px 24px;display:grid;grid-template-columns:1.5fr auto;gap:30px;align-items:center}
+  h1{font-family:var(--mono);font-weight:600;font-size:clamp(26px,4.2vw,42px);line-height:1.03;letter-spacing:-.01em;margin:.3em 0 .15em;text-wrap:balance}
+  h1 b{color:var(--accent);font-weight:600}
+  .lede{color:var(--ink-dim);margin:0;font-size:15px;max-width:56ch}
+  .steps{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .steps .s{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-dim);
+    background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:6px 13px 6px 7px}
+  .steps .s b{font-family:var(--mono);width:20px;height:20px;border-radius:99px;background:var(--accent);color:var(--accent-ink);
+    display:grid;place-items:center;font-size:11px;font-weight:600}
+
+  /* hub QR */
+  .hub{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .hub .plaque{background:#fff;border-radius:10px;padding:11px;width:132px;height:132px;box-shadow:0 6px 22px -12px rgba(0,0,0,.5)}
+  .hub .plaque svg{display:block;width:100%;height:100%}
+  .hub .cap{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint);text-align:center}
+  .hub .cap b{color:var(--ink-dim);font-weight:600}
+
+  /* grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  .card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:6px;
+    padding:16px;display:grid;grid-template-columns:auto 1fr;gap:15px;transition:border-color .18s,transform .18s,box-shadow .18s}
+  .card::before,.card::after{content:"";position:absolute;width:12px;height:12px;border:1.5px solid var(--ink-faint);opacity:.5;transition:.18s;pointer-events:none}
+  .card::before{top:6px;left:6px;border-right:0;border-bottom:0}
+  .card::after{bottom:6px;right:6px;border-left:0;border-top:0}
+  .card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--accent) 50%,var(--line));box-shadow:0 10px 28px -18px color-mix(in srgb,var(--accent) 60%,#000)}
+  .card:hover::before,.card:hover::after{border-color:var(--signal);opacity:1}
+
+  .qr{background:#fff;border-radius:8px;padding:8px;width:112px;height:112px;cursor:zoom-in;position:relative}
+  .qr svg{display:block;width:100%;height:100%}
+  .qr .expand{position:absolute;right:4px;bottom:4px;font-family:var(--mono);font-size:9px;color:#5E7182;letter-spacing:.05em}
+  .meta{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .toprow{display:flex;align-items:center;gap:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
+  .chip .dot{width:8px;height:8px;border-radius:2px}
+  .card[data-fw="A-Frame"] .dot{background:var(--fw-aframe)}
+  .card[data-fw="Studio"] .dot{background:var(--fw-studio)}
+  .card[data-fw="three.js"] .dot{background:var(--fw-three)}
+  .card h3{margin:1px 0 0;font-size:18px;font-weight:600;letter-spacing:-.01em}
+  .type{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.03em}
+  .blurb{font-size:13px;color:var(--ink-dim);margin:2px 0 0}
+  .actions{display:flex;gap:8px;margin-top:auto;padding-top:8px;flex-wrap:wrap}
+  .btn{font-family:var(--mono);font-size:12px;letter-spacing:.03em;padding:7px 12px;border-radius:4px;border:1px solid var(--line);color:var(--ink-dim);background:transparent;cursor:pointer}
+  .btn:hover{border-color:var(--accent);color:var(--ink)}
+  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .btn.primary:hover{filter:brightness(1.08);color:var(--accent-ink)}
+
+  .note{margin-top:22px;font-size:12.5px;color:var(--ink-faint);display:flex;gap:10px;align-items:flex-start;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:12px 15px}
+  .note b{color:var(--ink-dim)}
+
+  /* projector overlay */
+  .proj{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 94%,#000);backdrop-filter:blur(6px);
+    display:none;place-items:center;z-index:50;padding:24px}
+  .proj.on{display:grid}
+  .proj-card{display:grid;grid-template-columns:auto 1fr;gap:40px;align-items:center;max-width:1000px;width:100%}
+  .proj .big{background:#fff;border-radius:20px;padding:22px;width:min(46vh,440px);height:min(46vh,440px);box-shadow:0 20px 60px -20px rgba(0,0,0,.6)}
+  .proj .big svg{display:block;width:100%;height:100%}
+  .proj .info h2{font-family:var(--mono);font-size:clamp(24px,4vw,40px);margin:0 0 4px;letter-spacing:-.01em}
+  .proj .info .type{font-size:15px}
+  .proj .info ol{margin:20px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
+  .proj .info ol li{display:flex;gap:13px;align-items:center;font-size:17px;color:var(--ink-dim)}
+  .proj .info ol li b{font-family:var(--mono);width:26px;height:26px;border-radius:99px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:13px;font-weight:600;flex:none}
+  .proj .url{font-family:var(--mono);font-size:13px;color:var(--ink-faint);margin-top:22px;word-break:break-all}
+  .proj-nav{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:18px 22px}
+  .proj-nav .n{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+  .proj-nav button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:6px;
+    width:44px;height:44px;font-size:18px;cursor:pointer}
+  .proj-nav button:hover{border-color:var(--accent)}
+  .proj-arrows{position:fixed;inset:0;pointer-events:none;display:flex;justify-content:space-between;align-items:center;padding:0 14px}
+  .proj-arrows button{pointer-events:auto;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:99px;width:52px;height:52px;font-size:22px;cursor:pointer;opacity:.85}
+  .proj-arrows button:hover{border-color:var(--accent);opacity:1}
+
+  footer{margin-top:44px;border-top:1px solid var(--line);padding-top:18px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint)}
+  footer a{color:var(--ink-dim)}
+
+  @media (max-width:720px){
+    .head-in{grid-template-columns:1fr;gap:20px}
+    .hub{flex-direction:row;justify-content:flex-start}
+    .proj-card{grid-template-columns:1fr;gap:22px;justify-items:center;text-align:center}
+    .proj .info ol li{justify-content:center}
+    .proj .big{width:min(70vw,340px);height:min(70vw,340px)}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  button:focus-visible,a:focus-visible,.qr:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <div>
+      <span class="eyebrow">Realidad360 · Masterclass en vivo</span>
+      <h1>Realidad Aumentada <b>en tu celular</b></h1>
+      <p class="lede">Seis experiencias WebAR corriendo en el navegador — sin instalar apps. Escaneá un QR y probalas vos mismo.</p>
+      <div class="steps">
+        <span class="s"><b>1</b> Abrí la cámara del celu</span>
+        <span class="s"><b>2</b> Escaneá el QR</span>
+        <span class="s"><b>3</b> Permití la cámara</span>
+      </div>
+    </div>
+    <div class="hub">
+      <div class="plaque" id="hubqr" aria-label="QR a esta galería"></div>
+      <div class="cap"><b>Escaneá</b> para abrir<br>esta galería en tu celu</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid" id="grid"></div>
+
+  <div class="note">
+    <span>ℹ️</span>
+    <span><b>Para el presentador:</b> tocá cualquier QR (o “Proyectar”) para agrandarlo a pantalla completa y navegá con las flechas ← →. La experiencia de <b>Image Targets</b> necesita que se vea el <a id="flyerlink" href="#" target="_blank" rel="noopener">flyer de medusas</a> — proyectalo o mostralo en otra pantalla para que los asistentes lo apunten. Requiere <b>HTTPS</b> y buena luz.</span>
+  </div>
+
+  <footer>
+    <span>WebAR con 8th Wall Open Source · engine binary (SLAM) · sin app key</span>
+    <span><span id="baseurl"></span></span>
+  </footer>
+</div>
+
+<!-- Projector overlay -->
+<div class="proj" id="proj" role="dialog" aria-modal="true" aria-label="QR ampliado">
+  <div class="proj-nav">
+    <span class="n" id="projCount"></span>
+    <button id="projClose" aria-label="Cerrar (Esc)">✕</button>
+  </div>
+  <div class="proj-arrows">
+    <button id="projPrev" aria-label="Anterior">‹</button>
+    <button id="projNext" aria-label="Siguiente">›</button>
+  </div>
+  <div class="proj-card">
+    <div class="big" id="projQR"></div>
+    <div class="info">
+      <span class="chip" id="projFw"></span>
+      <h2 id="projName"></h2>
+      <div class="type" id="projType"></div>
+      <ol id="projSteps"></ol>
+      <div class="url" id="projUrl"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var EXP = [
+    {slug:'world-aframe', name:'World Effects', type:'World Tracking · SLAM', fw:'A-Frame',
+     blurb:'Tocá el piso y hacé crecer cactus en tu espacio real.',
+     steps:['Escaneá el QR','Permití la cámara','Apuntá al piso y tocá la pantalla']},
+    {slug:'image-aframe', name:'Image Targets', type:'Detección de imagen', fw:'A-Frame',
+     blurb:'Apuntá al flyer de medusas y aparece info 3D + video.',
+     steps:['Escaneá el QR','Permití la cámara','Apuntá al flyer proyectado'], target:'image-aframe/assets/flyer.jpg'},
+    {slug:'sky-aframe', name:'Sky Effects', type:'Segmentación de cielo', fw:'A-Frame',
+     blurb:'Apuntá al cielo (o una zona clara) y reemplazalo con efectos.',
+     steps:['Escaneá el QR','Permití la cámara','Apuntá hacia el cielo']},
+    {slug:'face-studio', name:'Face Effects', type:'Face Tracking', fw:'Studio',
+     blurb:'Filtro facial AR: contenido virtual anclado a tu cara.',
+     steps:['Escaneá el QR','Permití la cámara frontal','Mirá a la cámara']},
+    {slug:'physics-studio', name:'Physics Playground', type:'Juego · Física', fw:'Studio',
+     blurb:'Mini-juego AR con física, controles y cámara dinámica.',
+     steps:['Escaneá el QR','Permití la cámara','Apuntá al piso y jugá']},
+    {slug:'world-three', name:'World · three.js', type:'World Tracking · SLAM', fw:'three.js',
+     blurb:'La misma AR de world tracking, escrita en three.js puro.',
+     steps:['Escaneá el QR','Permití la cámara','Apuntá al piso']}
+  ];
+
+  function urlFor(slug){ return new URL(slug + '/', document.baseURI).href; }
+  function qrSvg(text, cell, margin){
+    var qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+    var tag = qr.createSvgTag({cellSize:cell||4, margin:(margin==null?2:margin), scalable:true});
+    return tag;
+  }
+  function paintQR(el, text, cell){
+    el.innerHTML = qrSvg(text, cell);
+    var svg = el.querySelector('svg');
+    if(svg){ svg.removeAttribute('width'); svg.removeAttribute('height'); svg.setAttribute('preserveAspectRatio','xMidYMid meet'); }
+  }
+
+  // hub QR -> gallery itself
+  var galleryUrl = new URL('.', document.baseURI).href;
+  paintQR(document.getElementById('hubqr'), galleryUrl, 3);
+  document.getElementById('baseurl').textContent = galleryUrl;
+  document.getElementById('flyerlink').href = urlFor('image-aframe').replace(/\/$/,'') + '/assets/flyer.jpg';
+
+  // cards
+  var grid = document.getElementById('grid');
+  EXP.forEach(function(e, i){
+    var url = urlFor(e.slug);
+    var card = document.createElement('article');
+    card.className = 'card'; card.setAttribute('data-fw', e.fw);
+    card.innerHTML =
+      '<div class="qr" tabindex="0" role="button" aria-label="Ampliar QR de '+e.name+'"><span class="expand">⤢</span></div>'+
+      '<div class="meta">'+
+        '<div class="toprow"><span class="chip"><i class="dot"></i>'+e.fw+'</span></div>'+
+        '<h3>'+e.name+'</h3>'+
+        '<div class="type">'+e.type+'</div>'+
+        '<p class="blurb">'+e.blurb+'</p>'+
+        '<div class="actions">'+
+          '<a class="btn primary" href="'+url+'" target="_blank" rel="noopener">Abrir ↗</a>'+
+          '<button class="btn" data-proj="'+i+'">Proyectar</button>'+
+        '</div>'+
+      '</div>';
+    grid.appendChild(card);
+    var qrBox = card.querySelector('.qr');
+    paintQR(qrBox, url, 4);
+    qrBox.addEventListener('click', function(){ openProj(i); });
+    qrBox.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); openProj(i); }});
+    card.querySelector('[data-proj]').addEventListener('click', function(){ openProj(i); });
+  });
+
+  // projector mode
+  var proj = document.getElementById('proj'), curr = -1;
+  function openProj(i){
+    curr = (i + EXP.length) % EXP.length;
+    var e = EXP[curr], url = urlFor(e.slug);
+    paintQR(document.getElementById('projQR'), url, 6);
+    document.getElementById('projFw').innerHTML = '<i class="dot" style="width:9px;height:9px;border-radius:2px;display:inline-block;background:var(--fw-'+(e.fw==='A-Frame'?'aframe':e.fw==='Studio'?'studio':'three')+')"></i> '+e.fw;
+    document.getElementById('projName').textContent = e.name;
+    document.getElementById('projType').textContent = e.type;
+    document.getElementById('projUrl').textContent = url;
+    var ol = document.getElementById('projSteps'); ol.innerHTML='';
+    e.steps.forEach(function(s,n){ var li=document.createElement('li'); li.innerHTML='<b>'+(n+1)+'</b>'+s; ol.appendChild(li); });
+    document.getElementById('projCount').textContent = (curr+1)+' / '+EXP.length+' · '+e.name;
+    proj.classList.add('on');
+  }
+  function closeProj(){ proj.classList.remove('on'); curr=-1; }
+  document.getElementById('projClose').addEventListener('click', closeProj);
+  document.getElementById('projNext').addEventListener('click', function(){ openProj(curr+1); });
+  document.getElementById('projPrev').addEventListener('click', function(){ openProj(curr-1); });
+  proj.addEventListener('click', function(ev){ if(ev.target===proj) closeProj(); });
+  document.addEventListener('keydown', function(ev){
+    if(!proj.classList.contains('on')) return;
+    if(ev.key==='Escape') closeProj();
+    else if(ev.key==='ArrowRight') openProj(curr+1);
+    else if(ev.key==='ArrowLeft') openProj(curr-1);
+  });
+</script>
+</body>
+</html>
