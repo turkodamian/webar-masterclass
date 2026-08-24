@@ -39,6 +39,12 @@
   #openLegend{position:fixed;top:12px;left:12px;z-index:39;display:none;background:var(--panel);border:1px solid var(--line);
     color:var(--ink);border-radius:9px;font-family:var(--mono);font-size:12px;padding:8px 12px;cursor:pointer}
   @media (max-width:520px){ #legend{font-size:11.5px;max-width:230px} }
+  /* virtual joystick (locomoción, sobre todo móvil) */
+  #joy{position:fixed;left:20px;bottom:26px;z-index:45;width:120px;height:120px;border-radius:50%;
+    background:rgba(13,20,27,.5);border:1px solid var(--line);touch-action:none;display:none;place-items:center}
+  #joy.on{display:grid}
+  #joy .thumb{width:52px;height:52px;border-radius:50%;background:var(--accent);opacity:.9;pointer-events:none}
+  #joy .jl{position:absolute;bottom:-19px;left:0;width:120px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--dim)}
 </style>
 </head>
 <body>
@@ -51,7 +57,7 @@
     <p>Seis estaciones, seis formas distintas de interactuar. Apuntá el retículo del centro a un objeto y <b>tocá / clic</b> para activarlo. Caminá para descubrir la estación de proximidad.</p>
     <div class="ctrls">
       <span><b>Desktop:</b> arrastrá para mirar · <b>WASD</b> para moverte · clic</span>
-      <span><b>Móvil:</b> movés el celu para mirar · tocá</span>
+      <span><b>Móvil:</b> <b>joystick</b> para moverte · movés el celu para mirar · tocá</span>
       <span><b>Headset:</b> botón <b>VR</b> (abajo a la derecha)</span>
     </div>
     <button id="enter">Entrar al mundo →</button>
@@ -73,6 +79,9 @@
     <li><span class="sw" style="background:#E5484D"></span><span><b>Proximidad</b> <span class="k">— obelisco al fondo: reacciona al acercarte</span></span></li>
   </ul>
 </div>
+
+<!-- ===== VIRTUAL JOYSTICK (locomoción) ===== -->
+<div id="joy"><div class="thumb" id="joyThumb"></div><div class="jl">MOVERTE</div></div>
 
 <!-- ===== SCENE ===== -->
 <a-scene background="color: #0A0E13" fog="type: linear; color: #0A0E13; near: 6; far: 26" renderer="colorManagement: true; antialias: true">
@@ -125,7 +134,7 @@
 
   <!-- camera + gaze cursor -->
   <a-entity id="rig" position="0 0 0">
-    <a-camera position="0 1.6 0" wasd-controls="acceleration: 28" look-controls="pointerLockEnabled: false">
+    <a-camera position="0 1.6 0" wasd-controls="acceleration: 28" look-controls="pointerLockEnabled: false" touch-move>
       <a-cursor
         raycaster="objects: .clickable, .prox; far: 30"
         fuse="false"
@@ -151,6 +160,25 @@
       o.start(); o.stop(_ac.currentTime + (dur || 0.16));
     }catch(e){}
   }
+
+  // ---------- locomoción: joystick táctil (móvil) + WASD (desktop) ----------
+  window.__joy = {x:0, y:0};
+  AFRAME.registerComponent('touch-move', {
+    init: function(){ this.dir = new THREE.Vector3(); this.right = new THREE.Vector3(); this.up = new THREE.Vector3(0,1,0);
+      this.rig = document.querySelector('#rig'); },
+    tick: function(t, dt){
+      var j = window.__joy; if(!j || (j.x === 0 && j.y === 0)) return;
+      var cam = this.el.sceneEl.camera; if(!cam || !this.rig) return;
+      cam.getWorldDirection(this.dir); this.dir.y = 0;
+      if(this.dir.lengthSq() < 1e-4) return;
+      this.dir.normalize();
+      this.right.crossVectors(this.dir, this.up).normalize();
+      var speed = 2.6, d = (dt || 16) / 1000;
+      var p = this.rig.object3D.position;
+      p.addScaledVector(this.dir, j.y * speed * d);
+      p.addScaledVector(this.right, j.x * speed * d);
+    }
+  });
 
   // ---------- grid floor texture ----------
   AFRAME.registerComponent('grid-floor', {
@@ -285,10 +313,33 @@
 
   // ---------- UI wiring ----------
   var intro = document.getElementById('intro');
-  document.getElementById('enter').addEventListener('click', function(){ intro.style.display='none'; beep(560,0.1); });
+  document.getElementById('enter').addEventListener('click', function(){
+    intro.style.display='none'; document.getElementById('joy').classList.add('on'); beep(560,0.1);
+  });
   var legend = document.getElementById('legend'), openL = document.getElementById('openLegend');
   document.getElementById('closeLegend').addEventListener('click', function(){ legend.style.display='none'; openL.style.display='block'; });
   openL.addEventListener('click', function(){ legend.style.display='block'; openL.style.display='none'; });
+
+  // ---------- joystick pointer handling ----------
+  (function(){
+    var joy = document.getElementById('joy'), thumb = document.getElementById('joyThumb');
+    var R = 44, active = false, pid = null, cx = 0, cy = 0;
+    function setVec(dx, dy){ thumb.style.transform = 'translate('+dx+'px,'+dy+'px)'; window.__joy.x = dx/R; window.__joy.y = -dy/R; }
+    function move(e){
+      if(!active || (pid !== null && e.pointerId !== pid)) return;
+      var dx = e.clientX - cx, dy = e.clientY - cy, dist = Math.hypot(dx, dy);
+      if(dist > R){ dx = dx/dist*R; dy = dy/dist*R; }
+      setVec(dx, dy);
+    }
+    function end(e){ if(pid !== null && e.pointerId !== pid) return; active = false; pid = null; setVec(0, 0); }
+    joy.addEventListener('pointerdown', function(e){
+      e.preventDefault(); active = true; pid = e.pointerId;
+      var r = joy.getBoundingClientRect(); cx = r.left + r.width/2; cy = r.top + r.height/2; move(e);
+    });
+    window.addEventListener('pointermove', move, {passive:true});
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+  })();
 </script>
 </body>
 </html>
