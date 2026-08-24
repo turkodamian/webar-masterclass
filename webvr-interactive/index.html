@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>WebVR 3D Interactivo · Masterclass</title>
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<style>
+  :root{ --accent:#5B8CFF; --signal:#FFB020; --ok:#35D07F; --ink:#E9EFF4; --dim:#93A4B3;
+    --panel:rgba(13,20,27,.86); --line:#26333F;
+    --mono:ui-monospace,"Cascadia Code","Roboto Mono",Menlo,Consolas,monospace; }
+  html,body{margin:0;height:100%;background:#0A0E13;font-family:"Segoe UI",system-ui,sans-serif;overflow:hidden}
+  a-scene{height:100vh;width:100vw}
+
+  /* intro overlay */
+  #intro{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(6,9,13,.82);backdrop-filter:blur(6px);padding:20px}
+  #intro .card{max-width:560px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;color:var(--ink)}
+  #intro h1{font-family:var(--mono);font-size:clamp(20px,3.4vw,30px);margin:0 0 4px;letter-spacing:-.01em}
+  #intro h1 b{color:var(--accent)}
+  #intro .eb{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+  #intro p{color:var(--dim);font-size:15px;line-height:1.5;margin:10px 0 0}
+  #intro .ctrls{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 6px}
+  #intro .ctrls span{font-family:var(--mono);font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:99px;padding:5px 11px}
+  #intro .ctrls b{color:var(--ink)}
+  #intro button{margin-top:16px;background:var(--accent);color:#08111f;border:0;border-radius:8px;
+    font-family:var(--mono);font-size:15px;font-weight:600;padding:12px 22px;cursor:pointer;letter-spacing:.02em}
+  #intro button:hover{filter:brightness(1.08)}
+
+  /* legend */
+  #legend{position:fixed;top:12px;left:12px;z-index:40;background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    padding:12px 13px;max-width:290px;color:var(--ink);font-size:12.5px;line-height:1.35}
+  #legend h2{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 9px}
+  #legend ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+  #legend li{display:flex;gap:9px;align-items:flex-start}
+  #legend .sw{width:12px;height:12px;border-radius:3px;flex:none;margin-top:2px}
+  #legend b{color:var(--ink);font-weight:600}
+  #legend .k{color:var(--dim)}
+  #legend .close{position:absolute;top:8px;right:10px;color:var(--dim);cursor:pointer;font-family:var(--mono);font-size:14px;background:none;border:0}
+  #openLegend{position:fixed;top:12px;left:12px;z-index:39;display:none;background:var(--panel);border:1px solid var(--line);
+    color:var(--ink);border-radius:9px;font-family:var(--mono);font-size:12px;padding:8px 12px;cursor:pointer}
+  @media (max-width:520px){ #legend{font-size:11.5px;max-width:230px} }
+</style>
+</head>
+<body>
+
+<!-- ===== INTRO OVERLAY ===== -->
+<div id="intro">
+  <div class="card">
+    <span class="eb">Masterclass · WebVR / 3D interactivo</span>
+    <h1>Un mundo 3D en tu <b>navegador</b></h1>
+    <p>Seis estaciones, seis formas distintas de interactuar. Apuntá el retículo del centro a un objeto y <b>tocá / clic</b> para activarlo. Caminá para descubrir la estación de proximidad.</p>
+    <div class="ctrls">
+      <span><b>Desktop:</b> arrastrá para mirar · <b>WASD</b> para moverte · clic</span>
+      <span><b>Móvil:</b> movés el celu para mirar · tocá</span>
+      <span><b>Headset:</b> botón <b>VR</b> (abajo a la derecha)</span>
+    </div>
+    <button id="enter">Entrar al mundo →</button>
+  </div>
+</div>
+
+<!-- ===== LEGEND ===== -->
+<button id="openLegend">▦ Leyenda</button>
+<div id="legend">
+  <button class="close" id="closeLegend" aria-label="Cerrar">✕</button>
+  <h2>Tipos de interacción</h2>
+  <ul>
+    <li><span class="sw" style="background:#FF6A3D"></span><span><b>Clic / activación</b> <span class="k">— cubo: cambia de color</span></span></li>
+    <li><span class="sw" style="background:#5B8CFF"></span><span><b>Hover / mirada</b> <span class="k">— esfera: se agranda al apuntarla</span></span></li>
+    <li><span class="sw" style="background:#35D07F"></span><span><b>Animación por evento</b> <span class="k">— toroide: gira al tocarlo</span></span></li>
+    <li><span class="sw" style="background:#FFB020"></span><span><b>Spawn / instanciar</b> <span class="k">— cono: crea objetos que caen</span></span></li>
+    <li><span class="sw" style="background:#B48CFF"></span><span><b>Estado / toggle</b> <span class="k">— cilindro: prende/apaga la luz</span></span></li>
+    <li><span class="sw" style="background:#28D6E6"></span><span><b>Manipulación / agarrar</b> <span class="k">— icosaedro: clic para tomar/soltar</span></span></li>
+    <li><span class="sw" style="background:#E5484D"></span><span><b>Proximidad</b> <span class="k">— obelisco al fondo: reacciona al acercarte</span></span></li>
+  </ul>
+</div>
+
+<!-- ===== SCENE ===== -->
+<a-scene background="color: #0A0E13" fog="type: linear; color: #0A0E13; near: 6; far: 26" renderer="colorManagement: true; antialias: true">
+  <a-assets>
+    <a-mixin id="label" text="align: center; width: 3; color: #E9EFF4; baseline: bottom"></a-mixin>
+  </a-assets>
+
+  <!-- lighting -->
+  <a-entity light="type: ambient; color: #4a5a6a; intensity: 0.7"></a-entity>
+  <a-entity light="type: directional; color: #cfe0ff; intensity: 0.6" position="-3 6 4"></a-entity>
+
+  <!-- floor with generated grid texture -->
+  <a-plane grid-floor rotation="-90 0 0" width="60" height="60" position="0 0 0"></a-plane>
+
+  <!-- 1 · CLICK → color -->
+  <a-box class="clickable" i-color position="-3.2 1.3 -2.8" depth="0.7" height="0.7" width="0.7"
+         material="color: #FF6A3D; metalness: 0.1; roughness: 0.6"></a-box>
+  <a-text mixin="label" value="CLIC → COLOR" position="-3.2 1.95 -2.8" color="#FF6A3D"></a-text>
+
+  <!-- 2 · HOVER / gaze → scale -->
+  <a-sphere class="clickable" i-hover position="-1.6 1.4 -3.8" radius="0.42"
+            material="color: #5B8CFF; metalness: 0.2; roughness: 0.4"></a-sphere>
+  <a-text mixin="label" value="MIRADA → CRECE" position="-1.6 2.05 -3.8" color="#5B8CFF"></a-text>
+
+  <!-- 3 · CLICK → spin animation -->
+  <a-torus class="clickable" i-spin position="0 1.4 -4.2" radius="0.4" radius-tubular="0.06"
+           material="color: #35D07F; metalness: 0.2; roughness: 0.5"></a-torus>
+  <a-text mixin="label" value="CLIC → ANIMA" position="0 2.0 -4.2" color="#35D07F"></a-text>
+
+  <!-- 4 · CLICK → spawn -->
+  <a-cone class="clickable" i-spawn position="1.6 1.35 -3.8" radius-bottom="0.45" radius-top="0" height="0.9"
+          material="color: #FFB020; metalness: 0.2; roughness: 0.5"></a-cone>
+  <a-text mixin="label" value="CLIC → SPAWN" position="1.6 2.05 -3.8" color="#FFB020"></a-text>
+
+  <!-- 5 · CLICK → toggle light -->
+  <a-cylinder class="clickable" i-toggle position="3.2 1.2 -2.8" radius="0.35" height="0.8"
+              material="color: #B48CFF; emissive: #B48CFF; emissiveIntensity: 0.15; metalness: 0.2; roughness: 0.4"></a-cylinder>
+  <a-text mixin="label" value="CLIC → LUZ ON/OFF" position="3.2 1.85 -2.8" color="#B48CFF"></a-text>
+  <a-entity id="lamp" light="type: point; color: #FFE7A8; intensity: 0; distance: 12" position="3.2 2.6 -2.8"></a-entity>
+
+  <!-- 6 · CLICK → grab / carry -->
+  <a-dodecahedron class="clickable" i-carry position="0 1.05 -2.1" radius="0.35"
+                  material="color: #28D6E6; emissive: #28D6E6; emissiveIntensity: 0.2; metalness: 0.3; roughness: 0.3"></a-dodecahedron>
+  <a-text mixin="label" value="CLIC → AGARRAR/SOLTAR" position="0 1.6 -2.1" color="#28D6E6"></a-text>
+
+  <!-- 7 · PROXIMITY -->
+  <a-box class="prox" i-proximity position="0 1.1 -9" depth="0.6" width="0.6" height="2.2"
+         material="color: #E5484D; emissive: #E5484D; emissiveIntensity: 0.15; metalness: 0.2; roughness: 0.5"></a-box>
+  <a-text mixin="label" value="ACERCATE →" position="0 2.5 -9" color="#E5484D"></a-text>
+
+  <!-- camera + gaze cursor -->
+  <a-entity id="rig" position="0 0 0">
+    <a-camera position="0 1.6 0" wasd-controls="acceleration: 28" look-controls="pointerLockEnabled: false">
+      <a-cursor
+        raycaster="objects: .clickable, .prox; far: 30"
+        fuse="false"
+        material="color: #FFB020; shader: flat"
+        geometry="primitive: ring; radiusInner: 0.012; radiusOuter: 0.02"
+        position="0 0 -1"></a-cursor>
+    </a-camera>
+  </a-entity>
+</a-scene>
+
+<script>
+  // ---------- shared audio (WebAudio beep, no assets) ----------
+  var _ac = null;
+  function beep(freq, dur){
+    try{
+      _ac = _ac || new (window.AudioContext || window.webkitAudioContext)();
+      if(_ac.state === 'suspended') _ac.resume();
+      var o = _ac.createOscillator(), g = _ac.createGain();
+      o.type = 'triangle'; o.frequency.value = freq || 440;
+      o.connect(g); g.connect(_ac.destination);
+      g.gain.setValueAtTime(0.16, _ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0008, _ac.currentTime + (dur || 0.16));
+      o.start(); o.stop(_ac.currentTime + (dur || 0.16));
+    }catch(e){}
+  }
+
+  // ---------- grid floor texture ----------
+  AFRAME.registerComponent('grid-floor', {
+    init: function(){
+      var c = document.createElement('canvas'); c.width = c.height = 512;
+      var x = c.getContext('2d');
+      x.fillStyle = '#0c1219'; x.fillRect(0,0,512,512);
+      x.strokeStyle = '#213040'; x.lineWidth = 2;
+      for(var i=0;i<=512;i+=64){ x.beginPath();x.moveTo(i,0);x.lineTo(i,512);x.stroke();
+        x.beginPath();x.moveTo(0,i);x.lineTo(512,i);x.stroke(); }
+      var mesh = this.el.getObject3D('mesh');
+      if(!mesh){ this.el.addEventListener('object3dset', this.apply.bind(this, c)); }
+      else this.apply(c);
+    },
+    apply: function(c){
+      var mesh = this.el.getObject3D('mesh'); if(!mesh) return;
+      var t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(30,30);
+      mesh.material.map = t; mesh.material.color.set('#ffffff'); mesh.material.needsUpdate = true;
+    }
+  });
+
+  // ---------- 1 · click → cycle color ----------
+  AFRAME.registerComponent('i-color', {
+    init: function(){
+      var cols = ['#FF6A3D','#5B8CFF','#35D07F','#FFB020','#B48CFF','#E5484D'], k = 0, el = this.el;
+      el.addEventListener('click', function(){
+        k = (k+1) % cols.length; el.setAttribute('material','color', cols[k]); beep(480 + k*40, 0.12);
+      });
+    }
+  });
+
+  // ---------- 2 · hover / gaze → scale + glow ----------
+  AFRAME.registerComponent('i-hover', {
+    init: function(){
+      var el = this.el;
+      el.addEventListener('mouseenter', function(){
+        el.setAttribute('scale','1.4 1.4 1.4');
+        el.setAttribute('material','emissive','#5B8CFF'); el.setAttribute('material','emissiveIntensity',0.6); beep(760,0.08);
+      });
+      el.addEventListener('mouseleave', function(){
+        el.setAttribute('scale','1 1 1'); el.setAttribute('material','emissiveIntensity',0);
+      });
+    }
+  });
+
+  // ---------- 3 · click → spin animation ----------
+  AFRAME.registerComponent('i-spin', {
+    init: function(){
+      var el = this.el, spinning = false;
+      el.addEventListener('click', function(){
+        if(spinning) return; spinning = true; beep(600,0.12);
+        el.setAttribute('animation__spin', {property:'rotation', to:'0 360 0', dur:900, easing:'easeInOutQuad'});
+        setTimeout(function(){ el.removeAttribute('animation__spin'); el.setAttribute('rotation','0 0 0'); spinning = false; }, 950);
+      });
+    }
+  });
+
+  // ---------- 4 · click → spawn falling boxes ----------
+  AFRAME.registerComponent('i-spawn', {
+    init: function(){
+      var el = this.el, cols = ['#FF6A3D','#5B8CFF','#35D07F','#FFB020','#B48CFF','#28D6E6'];
+      el.addEventListener('click', function(){
+        beep(520,0.1);
+        var p = el.object3D.position;
+        for(var n=0;n<5;n++){
+          (function(n){
+            var b = document.createElement('a-box');
+            var s = 0.14 + Math.sin(n*1.7)*0.05 + 0.06;
+            b.setAttribute('width',s); b.setAttribute('height',s); b.setAttribute('depth',s);
+            b.setAttribute('material', 'color: '+cols[n%cols.length]+'; metalness:0.2; roughness:0.5');
+            var x = p.x + (n-2)*0.22, y = p.y + 1.4, z = p.z + (n%2?0.15:-0.15);
+            b.setAttribute('position', x+' '+y+' '+z);
+            b.setAttribute('animation__fall', {property:'position', to:x+' 0.1 '+z, dur:1100+n*60, easing:'easeInQuad'});
+            b.setAttribute('animation__spin', {property:'rotation', to:(180+n*40)+' '+(360)+' 0', dur:1200, easing:'linear'});
+            b.setAttribute('animation__fade', {property:'material.opacity', from:1, to:0, dur:600, delay:1600, easing:'linear'});
+            b.setAttribute('material','opacity',1);
+            el.sceneEl.appendChild(b);
+            setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); }, 2400);
+          })(n);
+        }
+      });
+    }
+  });
+
+  // ---------- 5 · click → toggle light ----------
+  AFRAME.registerComponent('i-toggle', {
+    init: function(){
+      var el = this.el, on = false, lamp = document.querySelector('#lamp');
+      el.addEventListener('click', function(){
+        on = !on; beep(on?680:300, 0.14);
+        lamp.setAttribute('light','intensity', on?2.4:0);
+        el.setAttribute('material','emissiveIntensity', on?0.9:0.15);
+      });
+    }
+  });
+
+  // ---------- 6 · click → grab / carry ----------
+  AFRAME.registerComponent('i-carry', {
+    init: function(){
+      var el = this.el; this.held = false; this._v = new THREE.Vector3(); this._p = new THREE.Vector3();
+      var self = this;
+      el.addEventListener('click', function(){
+        self.held = !self.held; beep(self.held?660:330, 0.12);
+        el.setAttribute('material','emissiveIntensity', self.held?0.9:0.2);
+      });
+    },
+    tick: function(){
+      if(!this.held) return;
+      var cam = this.el.sceneEl.camera; if(!cam) return;
+      cam.getWorldPosition(this._p); cam.getWorldDirection(this._v);
+      this.el.object3D.position.set(
+        this._p.x + this._v.x*2, this._p.y + this._v.y*2, this._p.z + this._v.z*2);
+    }
+  });
+
+  // ---------- 7 · proximity trigger ----------
+  AFRAME.registerComponent('i-proximity', {
+    init: function(){ this.near = false; this._p = new THREE.Vector3(); this._o = new THREE.Vector3(); this.t = 0; },
+    tick: function(t, dt){
+      this.t += dt; if(this.t < 120) return; this.t = 0;   // throttle
+      var cam = this.el.sceneEl.camera; if(!cam) return;
+      cam.getWorldPosition(this._p); this.el.object3D.getWorldPosition(this._o);
+      var d = this._p.distanceTo(this._o), near = d < 3;
+      if(near !== this.near){
+        this.near = near; beep(near?720:360, 0.12);
+        this.el.setAttribute('material','color', near?'#35D07F':'#E5484D');
+        this.el.setAttribute('material','emissiveIntensity', near?0.8:0.15);
+        this.el.setAttribute('scale', near?'1.25 1.1 1.25':'1 1 1');
+      }
+    }
+  });
+
+  // ---------- UI wiring ----------
+  var intro = document.getElementById('intro');
+  document.getElementById('enter').addEventListener('click', function(){ intro.style.display='none'; beep(560,0.1); });
+  var legend = document.getElementById('legend'), openL = document.getElementById('openLegend');
+  document.getElementById('closeLegend').addEventListener('click', function(){ legend.style.display='none'; openL.style.display='block'; });
+  openL.addEventListener('click', function(){ legend.style.display='block'; openL.style.display='none'; });
+</script>
+</body>
+</html>
