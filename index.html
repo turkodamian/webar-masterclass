@@ -133,7 +133,7 @@
     <div>
       <span class="eyebrow">Realidad360 · Masterclass en vivo</span>
       <h1>Realidad Aumentada <b>en tu celular</b></h1>
-      <p class="lede">Seis experiencias WebAR corriendo en el navegador — sin instalar apps. Escaneá un QR y probalas vos mismo.</p>
+      <p class="lede">Cinco experiencias WebAR corriendo en el navegador — sin instalar apps. Escaneá un QR y probalas en tu celu.</p>
       <div class="steps">
         <span class="s"><b>1</b> Abrí la cámara del celu</span>
         <span class="s"><b>2</b> Escaneá el QR</span>
@@ -185,23 +185,20 @@
 
 <script>
   var EXP = [
-    {slug:'world-aframe', name:'World Effects', type:'World Tracking · SLAM', fw:'A-Frame',
-     blurb:'Tocá el piso y hacé crecer cactus en tu espacio real.',
+    {slug:'world-aframe', name:'World Tracking', type:'Superficies · SLAM', fw:'A-Frame',
+     blurb:'Tocá el piso y hacé crecer cactus anclados a tu espacio real.',
      steps:['Escaneá el QR','Permití la cámara','Apuntá al piso y tocá la pantalla']},
+    {slug:'ar-model', name:'AR de Producto', type:'Escala real · SLAM', fw:'A-Frame',
+     blurb:'Poné un auto 3D a tamaño real en el piso y escalalo con los dedos.',
+     steps:['Escaneá el QR','Permití la cámara','Apuntá al piso; pellizcá para escalar']},
     {slug:'image-aframe', name:'Image Targets', type:'Detección de imagen', fw:'A-Frame',
-     blurb:'Apuntá al flyer de medusas y aparece info 3D + video.',
+     blurb:'Apuntá al flyer de medusas y aparece info 3D + video sobre la imagen.',
      steps:['Escaneá el QR','Permití la cámara','Apuntá al flyer proyectado'], target:'image-aframe/assets/flyer.jpg'},
-    {slug:'sky-aframe', name:'Sky Effects', type:'Segmentación de cielo', fw:'A-Frame',
-     blurb:'Apuntá al cielo (o una zona clara) y reemplazalo con efectos.',
-     steps:['Escaneá el QR','Permití la cámara','Apuntá hacia el cielo']},
     {slug:'face-studio', name:'Face Effects', type:'Face Tracking', fw:'Studio',
-     blurb:'Filtro facial AR: contenido virtual anclado a tu cara.',
+     blurb:'Filtro facial AR: contenido virtual anclado a tu cara en tiempo real.',
      steps:['Escaneá el QR','Permití la cámara frontal','Mirá a la cámara']},
-    {slug:'physics-studio', name:'Physics Playground', type:'Juego · Física', fw:'Studio',
-     blurb:'Mini-juego AR con física, controles y cámara dinámica.',
-     steps:['Escaneá el QR','Permití la cámara','Apuntá al piso y jugá']},
-    {slug:'world-three', name:'World · three.js', type:'World Tracking · SLAM', fw:'three.js',
-     blurb:'La misma AR de world tracking, escrita en three.js puro.',
+    {slug:'world-three', name:'World · three.js', type:'Superficies · SLAM · código', fw:'three.js',
+     blurb:'La misma AR de superficies, escrita en three.js puro (enfoque dev).',
      steps:['Escaneá el QR','Permití la cámara','Apuntá al piso']}
   ];
 
